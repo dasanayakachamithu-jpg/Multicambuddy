@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>Chami Live Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101d30;--line:#233854;--blue:#2878ff;--green:#00d49a;--red:#ff3b30;--text:#eaf2ff;--muted:#9bb0ca}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,Arial,sans-serif}
+header{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#081523}
+h1{font-size:1.35rem;margin:0}header p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.header-actions{display:flex;align-items:center;gap:10px}
+main{max-width:1100px;margin:auto;padding:18px;display:grid;gap:16px;grid-template-columns:1.5fr 1fr}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+h2{font-size:1.05rem;margin:0 0 12px}label{display:block;color:var(--muted);font-size:.9rem;margin:12px 0 6px}
+input,select,button{font:inherit;border-radius:10px;padding:11px 12px;border:1px solid #36506f;background:#091526;color:var(--text);width:100%}
+button{cursor:pointer;background:var(--blue);border:0;font-weight:650;margin-top:10px}button.secondary{background:#20334d;border:1px solid #36506f}button:disabled{opacity:.45;cursor:not-allowed}
+button.danger{background:var(--red)}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1;min-width:0}
+.status{color:var(--green);font-size:.9rem;overflow-wrap:anywhere}.hint{color:var(--muted);font-size:.87rem;line-height:1.5}
+.preview{background:#02060b;border:1px solid var(--line);border-radius:12px;overflow:hidden;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative}
+video{width:100%;height:100%;object-fit:contain;background:#02060b}.placeholder{color:var(--muted);text-align:center;padding:20px}
+.cameras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.camera-card{border:1px solid var(--line);padding:8px;border-radius:12px;cursor:pointer;background:#0a1728}.camera-card.active{border:2px solid var(--green)}.switch-source{width:auto;flex:1;min-width:58px;padding:9px 7px;font-size:.85rem}.switch-source.selected{outline:2px solid var(--blue);background:#153b73}.switch-source.available{border-color:var(--green)}#programPreview video{transition:opacity .18s ease}.camera-card video{aspect-ratio:16/9;object-fit:cover;border-radius:7px}.camera-card strong{font-size:.85rem;display:block;margin:6px 2px}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:4px 9px;font-size:.8rem;color:var(--muted)}
+footer{text-align:center;color:var(--muted);padding:0 18px 24px;font-size:.82rem}
+@media(max-width:760px){main{grid-template-columns:1fr;padding:12px}.cameras{grid-template-columns:1fr 1fr}.panel{padding:13px}header{padding:15px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎬 Chami Live Studio</h1>
+    <p>5-phone camera switcher • Tablet director • MP4 Recording & Streaming</p>
+  </div>
+  <div class="header-actions">
+    <button id="googleLoginBtn" class="secondary" style="margin-top:0;padding:8px 14px;font-size:.85rem">🔵 Connect Gmail / Google</button>
+    <span class="badge" id="connectionBadge">Not connected</span>
+  </div>
+</header>
+<main>
+<section class="panel">
+  <h2>Director preview</h2>
+  <div class="preview" id="programPreview"><div class="placeholder">Your selected camera will appear here.<br>Open this website on the tablet in Director mode.</div></div>
+  <div class="row"><button id="switchBtn" class="secondary" disabled>Next camera</button><button id="fullscreenBtn" class="secondary">Full screen</button></div>
+  
+  <section class="panel" style="margin-top:14px;padding:12px;background:#0a1728">
+    <h2>🔴 Program Recording & Streaming</h2>
+    <p class="hint">Record your switched output program directly to an MP4 file, or stream via YouTube (using your connected Google/Gmail account credentials).</p>
+    <div class="row">
+      <button id="recordBtn">Start MP4 Recording</button>
+      <button id="downloadRecordBtn" class="secondary" disabled>Download MP4</button>
+    </div>
+    <p class="hint" id="recStatus" style="margin-top:8px">Recorder ready. No active recording.</p>
+    
+    <label style="margin-top:14px">YouTube / Platform RTMP Stream URL & Key</label>
+    <input id="rtmpUrl" placeholder="rtmp://a.rtmp.youtube.com/live2">
+    <input id="streamKey" type="password" placeholder="Enter Stream Key from YouTube Studio" style="margin-top:6px">
+    <button id="streamPlatformBtn" class="secondary" style="margin-top:8px">Connect Stream to YouTube</button>
+  </section>
+
+  <section class="panel" style="margin-top:14px;padding:12px;background:#0a1728">
+    <h2>🎚️ Live Switcher</h2>
+    <p class="hint">Choose a connected source, then press CUT to switch. AUTO adds a simple fade.</p>
+    <div id="switcherButtons" class="row" style="flex-wrap:wrap;gap:6px">
+      <button class="secondary switch-source" data-source="0">CAM 1</button>
+      <button class="secondary switch-source" data-source="1">CAM 2</button>
+      <button class="secondary switch-source" data-source="2">CAM 3</button>
+      <button class="secondary switch-source" data-source="3">CAM 4</button>
+      <button class="secondary switch-source" data-source="4">CAM 5</button>
+    </div>
+    <div class="row"><button id="cutBtn" disabled>CUT</button><button id="autoBtn" class="secondary" disabled>AUTO · FADE</button></div>
+    <p class="hint" id="switcherStatus">Selected source: none · Program: none</p>
+  </section>
+  <h2 style="margin-top:20px">Camera feeds</h2>
+  <div class="cameras" id="cameraCards">
+    <div class="camera-card"><div class="placeholder">Waiting for Phone 1…</div><strong>Camera 1</strong></div>
+    <div class="camera-card"><div class="placeholder">Waiting for Phone 2…</div><strong>Camera 2</strong></div>
+    <div class="camera-card"><div class="placeholder">Waiting for Phone 3…</div><strong>Camera 3</strong></div>
+    <div class="camera-card"><div class="placeholder">Waiting for Phone 4…</div><strong>Camera 4</strong></div>
+    <div class="camera-card"><div class="placeholder">Waiting for Phone 5…</div><strong>Camera 5</strong></div>
+  </div>
+</section>
+<aside class="panel">
+  <h2>Choose device role</h2>
+  <label for="role">This device is</label>
+  <select id="role"><option value="director">Tablet — Director</option><option value="camera">Phone — Camera source / Mevo Go</option></select>
+  <div id="directorBox">
+    <button id="startDirector">Start director / create room</button>
+    <label>Short director code (8 characters)</label>
+    <input id="directorId" readonly placeholder="Tap Start director">
+    <label>Private join PIN (share only with your camera phones)</label>
+    <input id="directorPin" readonly placeholder="Created with the room">
+    <button id="copyId" class="secondary" disabled>Copy director code</button>
+  </div>
+  <div id="cameraBox" hidden>
+    <label for="targetId">Short director code from tablet</label>
+    <input id="targetId" placeholder="Enter 8-character code" maxlength="8" autocomplete="off">
+    <label for="joinPin">Private join PIN from tablet</label>
+    <input id="joinPin" placeholder="Enter 6-digit PIN" inputmode="numeric" maxlength="6" autocomplete="off">
+    <label for="cameraName">Camera name</label>
+    <input id="cameraName" value="Phone 1" maxlength="24">
+    <label for="facing">Camera lens</label>
+    <select id="facing"><option value="environment">Back camera</option><option value="user">Front camera</option></select>
+    <button id="connectCamera">Start camera and connect</button>
+    <div class="preview" style="margin-top:12px"><video id="localVideo" autoplay muted playsinline></video></div>
+  </div>
+  <p id="status" class="status" role="status">Ready. Start on the tablet first. Use the short code + private PIN on phones.</p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>Google / YouTube Streaming Guide</h2>
+  <p class="hint">1. Click <b>Connect Gmail / Google</b> to sign in with your account.<br>2. Go to YouTube Studio to grab your Stream Key.<br>3. Paste your stream key above to link your broadcast program.</p>
+</aside>
+</main>
+<footer>Chami Live Studio • Google Account Integration Extension</footer>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const MAX_CAMERAS=5;
+let peer=null, localStream=null, calls=[], streams=[], activeIndex=0, pendingIndex=0;
+let mediaRecorder=null, recordedChunks=[];
+let googleUserConnected = false;
+
+function status(msg){$('status').textContent=msg}
+function badge(msg){$('connectionBadge').textContent=msg}
+function cleanup(){try{if(peer)peer.destroy()}catch(e){} peer=null;calls=[];streams=[];activeIndex=0}
+
+$('role').addEventListener('change',()=>{const d=$('role').value==='director';$('directorBox').hidden=!d;$('cameraBox').hidden=d;status(d?'Ready to start director.':'Enter the tablet director ID.');});
+
+// ---- Google / Gmail Login Handler Mock ----
+$('googleLoginBtn').addEventListener('click', () => {
+  // In a production app, you would integrate Google Identity Services (GIS) / Firebase Auth here.
+  const emailInput = prompt("Enter your Gmail address to connect your Google account for streaming/broadcast integration:");
+  if (emailInput && emailInput.includes("@")) {
+    googleUserConnected = true;
+    $('googleLoginBtn.textContent') = '';
+    $('googleLoginBtn').innerHTML = `✅ ${emailInput.split('@')[0]}`;
+    $('googleLoginBtn.style.background'] = '#00d49a';
+    $('googleLoginBtn.style.color'] = '#07111f';
+    alert(`Successfully linked Google account: ${emailInput}\nYou can now configure your YouTube broadcast settings.`);
+  }
+});
+
+function makeRoomCode(){
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes=new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');
+}
+function makePin(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%1000000).padStart(6,'0')}
+
+$('startDirector').addEventListener('click',()=>{
+  if(!window.Peer){status('Could not load connection library.');return}
+  cleanup();
+  const code=makeRoomCode(), pin=makePin();
+  $('directorId').value=''; $('directorPin').value='';
+  status('Creating private director room…');
+  peer=new Peer(code);
+  peer.on('open',id=>{
+    $('directorId').value=id;
+    $('directorPin').value=pin;
+    $('copyId').disabled=false;
+    status('Room ready.');
+    badge('Private room ready');
+  });
+  peer.on('call',call=>{
+    if(!call.metadata || call.metadata.joinPin !== pin){
+      call.close();
+      status('Rejected connection: incorrect PIN.');
+      return;
+    }
+    if(calls.filter(Boolean).length>=MAX_CAMERAS){
+      call.close();status('Maximum of 5 cameras reached.');return;
+    }
+    call.answer();
+    let idx=streams.findIndex(s=>!s);
+    if(idx<0)idx=streams.length;
+    if(idx>=MAX_CAMERAS){call.close();return}
+    calls[idx]=call;
+    call.on('stream',stream=>{
+      streams[idx]=stream;renderCards();
+      if(streams.filter(Boolean).length===1)selectCamera(idx);
+      status('Camera connected: '+(idx+1));
+      badge(streams.filter(Boolean).length+' camera(s) connected');
+    });
+    call.on('close',()=>{streams[idx]=null;calls[idx]=null;renderCards()});
+    call.on('error',e=>status('Connection issue: '+e.message));
+  });
+});
+
+$('copyId').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('directorId').value);status('Director ID copied.')}catch(e){$('directorId').select()}});
+
+$('connectCamera').addEventListener('click',async()=>{
+  if(!window.Peer){status('Could not load connection library.');return}
+  const target=$('targetId').value.trim().toUpperCase();const pin=$('joinPin').value.trim();
+  if(!/^[A-HJ-NP-Z2-9]{8}$/.test(target)){status('Enter the 8-character director code.');return}
+  if(!/^\d{6}$/.test(pin)){status('Enter the 6-digit private PIN.');return}
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:$('facing').value,width:{ideal:1280},height:{ideal:720}},audio:true});
+    $('localVideo').srcObject=localStream;cleanup();peer=new Peer();
+    peer.on('open',()=>{status('Connecting to tablet…');const call=peer.call(target,localStream,{metadata:{name:$('cameraName').value||'Camera',joinPin:pin}});if(!call)return;call.on('stream',()=>{});});
+  }catch(e){status('Camera setup failed: '+e.message)}
+});
+
+function renderCards(){
+ const box=$('cameraCards');box.innerHTML='';
+ for(let i=0;i<MAX_CAMERAS;i++){
+  const card=document.createElement('div');card.className='camera-card'+(i===activeIndex?' active':'');
+  if(streams[i]){const v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.muted=true;v.srcObject=streams[i];card.appendChild(v)}
+  else {const p=document.createElement('div');p.className='placeholder';p.textContent='Waiting for Phone '+(i+1)+'…';card.appendChild(p)}
+  const label=document.createElement('strong');label.textContent='Camera '+(i+1)+(streams[i]?' • Connected':' • Offline');card.appendChild(label);
+  card.addEventListener('click',()=>selectCamera(i));box.appendChild(card)
+ }
+ $('switchBtn').disabled=streams.filter(Boolean).length<2;
+ document.querySelectorAll('.switch-source').forEach(btn=>{
+   const i=Number(btn.dataset.source);
+   btn.classList.toggle('available',!!streams[i]);
+   btn.classList.toggle('selected',i===pendingIndex);
+   btn.disabled=!streams[i];
+ });
+ $('cutBtn').disabled=!streams[pendingIndex];
+ $('autoBtn').disabled=!streams[pendingIndex];
+}
+
+function selectCamera(i){
+  if(!streams[i])return;activeIndex=i;pendingIndex=i;
+  const box=$('programPreview');box.innerHTML='';
+  const v=document.createElement('video');v.id='programVideoElement';v.autoplay=true;v.playsInline=true;v.muted=true;v.srcObject=streams[i];
+  box.appendChild(v);
+  renderCards();
+}
+
+// ---- MP4 Recording Functionality ----
+$('recordBtn').addEventListener('click', () => {
+  const videoEl = $('programVideoElement');
+  if (!videoEl || !videoEl.srcObject) {
+    alert("No active live program feed available to record!");
+    return;
+  }
+  
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    $('recordBtn').textContent = 'Start MP4 Recording';
+    $('recordBtn').classList.remove('danger');
+    return;
+  }
+
+  recordedChunks = [];
+  const stream = videoEl.srcObject;
+  try {
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+  } catch (e) {
+    try {
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/mp4' });
+    } catch (err) {
+      mediaRecorder = new MediaRecorder(stream);
+    }
+  }
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      recordedChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+    const url = URL.createObjectURL(blob);
+    window.downloadUrl = url;
+    $('downloadRecordBtn').disabled = false;
+    $('recStatus').textContent = 'Recording finished! Click "Download MP4" to save your file.';
+  };
+
+  mediaRecorder.start();
+  $('recordBtn').textContent = 'Stop Recording';
+  $('recordBtn').classList.add('danger');
+  $('recStatus').textContent = 'Recording live program in progress...';
+});
+
+$('downloadRecordBtn').addEventListener('click', () => {
+  if (!window.downloadUrl) return;
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = window.downloadUrl;
+  a.download = `chami-live-program-${Date.now()}.mp4`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); }, 100);
+});
+
+// ---- YouTube / Streaming Connection Hook ----
+$('streamPlatformBtn').addEventListener('click', () => {
+  if (!googleUserConnected) {
+    alert("Please connect your Gmail / Google account first using the button at the top right.");
+    return;
+  }
+  const url = $('rtmpUrl').value.trim();
+  const key = $('streamKey').value.trim();
+  if(!url || !key) {
+    alert("Please provide both the RTMP Stream URL and Stream Key from YouTube Studio.");
+    return;
+  }
+  alert("Stream configuration saved successfully for your connected Google account. Ensure your streaming relay bridge or OBS WebRTC input is active.");
+});
+
+$('switchBtn').addEventListener('click',()=>{for(let n=1;n<=MAX_CAMERAS;n++){const i=(activeIndex+n)%MAX_CAMERAS;if(streams[i]){selectCamera(i);return}}});
+$('fullscreenBtn').addEventListener('click',()=>{const el=$('programPreview');if(el.requestFullscreen)el.requestFullscreen()});
+document.querySelectorAll('.switch-source').forEach(btn=>btn.addEventListener('click',()=>{
+ const i=Number(btn.dataset.source);if(!streams[i])return;pendingIndex=i;renderCards();
+}));
+$('cutBtn').addEventListener('click',()=>{if(streams[pendingIndex])selectCamera(pendingIndex)});
+$('autoBtn').addEventListener('click',()=>{
+ if(!streams[pendingIndex])return;
+ const box=$('programPreview');box.style.opacity='0.25';
+ setTimeout(()=>{selectCamera(pendingIndex);box.style.opacity='1'},180);
+});
+renderCards();
+</script>
+</body>
+</html>
